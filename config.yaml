@@ -1,1 +1,31 @@
-file1: path/to/file1 # Add your own files that will be used in the pipeline
+DATA: /lustre/nobackup/WUR/ABGC/moiti001/SINGLE_CELL/PRACTICE/DATA
+FASTA: /lustre/nobackup/WUR/ABGC/moiti001/SINGLE_CELL/PRACTICE/DATA/Sus_scrofa.Sscrofa11.1.dna.toplevel.fa
+GTF: /lustre/nobackup/WUR/ABGC/moiti001/SINGLE_CELL/PRACTICE/DATA/Sus_scrofa.Sscrofa11.1.105.gtf
+
+# Filter GTF
+FILTER_GTF: n
+# see here for available biotypes https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf
+ATTRIBUTES:
+  - "--attribute=gene_biotype:protein_coding"
+
+# mkref options
+PREFIX: pig
+REF_VERSION: 
+  - "--ref-version=11.1.105"
+CR_MKREF_EXTRA: ""
+
+# rcorrector options
+KMER: 25 #kmer_length
+RCORRECTOR_EXTRA: "" # check options here https://github.com/mourisl/Rcorrector
+RCORRECTOR: se # or pe
+# if se:
+RCORRECTOR_R: R2 # or R1
+
+# polyA trimming
+# check options here https://cutadapt.readthedocs.io/en/stable/guide.html
+TRIM_EXTRA: 
+  - '-A "A{10}"'
+  - "--minimum-length :25" # extra options for cutadapt
+
+# Cell ranger count options 
+CR_COUNT_extra: "" #https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count
