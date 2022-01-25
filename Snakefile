@@ -18,33 +18,40 @@ FASTA = config["FASTA"]
 PREFIX = config["PREFIX"]
 KMER = config["KMER"]
 RCORRECTOR = config["RCORRECTOR"]
+RCORRECTOR_EXTRA = config["RCORRECTOR_EXTRA"]
 if "RCORRECTOR" in config:
     RCORRECTOR_R = config["RCORRECTOR_R"]
-TRIM = config["TRIM"]
 TRIM_EXTRA = config["TRIM_EXTRA"]
 REF_VERSION = config["REF_VERSION"]
 CR_MKREF_EXTRA = config["CR_MKREF_EXTRA"]
 CR_COUNT_EXTRA = config["CR_COUNT_extra"]
 
-# sample, = glob_wildcards(os.path.join(DATA_DIR, "{sample}.fastq.gz"))
 sample, = glob_wildcards(os.path.join(DATA_DIR, "{sample,[^/]+}.fastq.gz"))
 
-# print(sample)
-
 sample_stem, = glob_wildcards(os.path.join(DATA_DIR, "{sample_stem}_R1.fastq.gz"))
-# print(name)
-localrules: edit_gtf
+
+localrules: edit_gtf, create_file_log
+
+cellranger_count_outfiles = ["web_summary.html",
+                            "metrics_summary.csv", 
+                            "possorted_genome_bam.bam",
+                            "possorted_genome_bam.bam.bai",
+                            "filtered_feature_bc_matrix",
+                            "filtered_feature_bc_matrix_h5.h5",
+                            "raw_feature_bc_matrix",
+                            "raw_feature_bc_matric_h5.h5",
+                            "analysis",
+                            "molecule_info.h5",
+                            "cloupe.cloupe"]
 
 rule all:
     input:
         "read_quality_assessment/multiqc_report.html",
-        # expand(os.path.join("corrected_reads", "{sample_stem}_R1.cor.fq.gz"), sample_stem=sample_stem),
-        # expand(os.path.join("corrected_reads", "{sample_stem}_R2.cor.fq.gz"), sample_stem=sample_stem),
         expand("polyA_trimmed/{sample_stem}_R2.Atrimmed.fastq.gz", sample_stem = sample_stem),
         expand("polyA_trimmed/{sample_stem}_R1.Atrimmed.fastq.gz", sample_stem = sample_stem),
-        # Path(GTF).stem + ".filtered.gtf",
-        # directory(PREFIX + "_genome")
-        "mkref_done.txt"
+        "mkref_done.txt",
+        expand("{sample_stem}/outs/{counts_out}",counts_out = cellranger_count_outfiles, sample_stem=sample_stem)
+
 
 
 rule fastqc:
@@ -76,7 +83,6 @@ rule multiqc:
         'qc'
     shell:
         'multiqc {params.fastqc_results} --filename {output}'
-# print(",".join(expand(os.path.join("corrected_reads", "{sample_stem}_R1.cor.fq.gz"), sample_stem =sample_stem)))
 
 
 if RCORRECTOR == "pe":
@@ -91,11 +97,12 @@ if RCORRECTOR == "pe":
             'Rule {rule} processing'
         params:
             outdir = "corrected_reads",
-            kmer = KMER
+            kmer = KMER,
+            extra = RCORRECTOR_EXTRA
         group:
             'group'
         shell:
-            'run_rcorrector.pl -k {params.kmer} -1 {input.R1} -2 {input.R2} -od {params.outdir} -t 16'
+            'run_rcorrector.pl {params.extra} -k {params.kmer} -1 {input.R1} -2 {input.R2} -od {params.outdir} -t 16'
 
 elif RCORRECTOR == "se":
     rule rcorrector_se:
@@ -107,9 +114,10 @@ elif RCORRECTOR == "se":
             'Rule {rule} processing'
         params:
             outdir = "corrected_reads",
-            kmer = KMER
+            kmer = KMER,
+            extra = RCORRECTOR_EXTRA
         shell:
-            "run_rcorrector.pl -s {input} -k {params.kmer} -od {params.outdir}"
+            "run_rcorrector.pl {params.extra} -s {input} -k {params.kmer} -od {params.outdir}"
 
 
 # def rcorrector_input_se():
@@ -144,11 +152,10 @@ rule trim_poly_A:
     group:
         'group'
     params:
-        trim = lambda wc: TRIM,
-        extra = TRIM_EXTRA
+        extra = lambda wc: TRIM_EXTRA
     shell:
         """
-        cutadapt {params.trim} --cores 0 {params.extra} -o {output.R1} -p {output.R2} {input.R1} {input.R2}
+        cutadapt --cores 0 {params.extra} -o {output.R1} -p {output.R2} {input.R1} {input.R2}
         """
 
 
@@ -213,23 +220,13 @@ rule cellranger_mkref: # short run time. around 10 min
 {params.extra}
         """
 
-cellranger_count_outfiles = ["web_summary.html",
-                            "metrics_summary.csv", 
-                            "possorted_genome_bam.bam",
-                            "possorted_genome_bam.bam.bai",
-                            "filtered_feature_bc_matrix",
-                            "filtered_feature_bc_matrix_h5.h5",
-                            "raw_feature_bc_matrix",
-                            "raw_feature_bc_matric_h5.h5",
-                            "analysis",
-                            "molecule_info.h5",
-                            "cloupe.cloupe"]
+
 rule cellranger_count:
     input:
         fastq = rules.trim_poly_A.output,
         mkref = rules.cellranger_mkref.output.done
     output:
-        expand("{sample_stem}/outs/{counts_out}",counts_out = cellranger_count_outfiles )
+        expand("{{sample_stem}}/outs/{counts_out}",counts_out = cellranger_count_outfiles )
     message:
         'Rule {rule} processing'
     params:
@@ -245,3 +242,13 @@ rule cellranger_count:
 --sample={wildcards.sample_stem} \
 --jobmode=slurm
         """
+
+rule subset_count:
+    input:
+        'input'
+    output:
+        'file.out'
+    message:
+        'Rule {rule} processing'
+    shell:
+        ''
