@@ -31,7 +31,7 @@ for (package in packages){
 # General overview of the data
 Load data and plot clusters
 ```{r, warning=FALSE, message=FALSE}
-sc <- load10X(snakemake@input)
+sc <- load10X(snakemake@params$input)
 dd <- sc$metaData
 mids <- aggregate(cbind(tSNE1,tSNE2) ~ clusters,data=dd,FUN=mean)
 
@@ -134,7 +134,8 @@ for (gene in sampled_genes){
 
 # Save the results
 ```{r}
+print(paste0("Saving results to SoupX/", snakemake@params$sample))
 dir.create(file.path(getwd(), "SoupX"), showWarnings = FALSE)
-path_to_save <- paste0("SoupX/", snakemake@wildcards$sample_stem)
+path_to_save <- paste0("SoupX/", snakemake@params$sample)
 write10xCounts(path=path_to_save, out, version = "3")
 ```
