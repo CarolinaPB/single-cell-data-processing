@@ -1,7 +1,7 @@
 configfile: "config.yaml"
 
 from snakemake.shell import shell
-from snakemake_wrapper_utils.java import get_java_opts
+# from snakemake_wrapper_utils.java import get_java_opts
 from pathlib import Path
 pipeline = "single-cell-data-processing" # replace with your pipeline's name
 
@@ -14,16 +14,21 @@ if "OUTDIR" in config:
 DATA_DIR = config["DATA"]
 PREFIX = config["PREFIX"]
 CR_COUNT_EXTRA = config["CR_COUNT_extra"]
+RENAME = config["RENAME"]
 
 
-localrules:  create_file_log, remove_ambient_RNA, combine_cellrange_counter_metrics
+localrules:  create_file_log, remove_ambient_RNA, combine_cellrange_counter_metrics, rename_files
 
-SAMPLES_SHORT,SAMPLES, REST, = glob_wildcards(os.path.join(DATA_DIR, "{sample_short}/{sample}_S{rest}_R1_001.fastq.gz"))
+# SAMPLES_SHORT,SAMPLES, REST, = glob_wildcards(os.path.join(DATA_DIR, "{sample_short}/{sample}_S{rest}_R1_001.fastq.gz"))
+
+if RENAME.lower() =="n":
+    TEST, REST, = glob_wildcards(os.path.join(DATA_DIR, "{test}_S{rest}_R1_001.fastq.gz"))
+elif RENAME.lower() == "y":
+    TEST, = glob_wildcards(os.path.join(DATA_DIR, "{test}_R1.fastq.gz"))
 
 
-TEST, REST, = glob_wildcards(os.path.join(DATA_DIR, "{test}_S{rest}_R1_001.fastq.gz"))
-# sap = [stem.split("/")[1] for stem in TEST])
-# print(SAMPLE_DIR)
+print(TEST)
+
 cellranger_count_outfiles = ["web_summary.html",
                             "metrics_summary.csv", 
                             "possorted_genome_bam.bam",
@@ -38,12 +43,15 @@ cellranger_count_outfiles = ["web_summary.html",
 
 test_dict = {}
 for el in TEST:
-    op = el.split("/")
-    if op[0] in test_dict:
-        test_dict[op[0]].append(op[1])
+    if "/" in el:
+        op = el.split("/")
+        if op[0] in test_dict:
+            test_dict[op[0]].append(op[1])
+        else:
+            test_dict[op[0]] = [op[1]]
     else:
-        test_dict[op[0]] = [op[1]]
-
+        test_dict[el] = [el]
+print(test_dict)
 
 rule all:
     input:
@@ -57,10 +65,25 @@ rule all:
 
 
 # def cellranger_count_input():
+if RENAME.lower() == "y":
+    subworkflow rename_files:
+        # workdir:
+        #     os.path.join(workflow.basedir,"subworkflow/rename_fastqs")
+        snakefile:
+            os.path.join(workflow.basedir,"subworkflow/rename_fastqs/Snakefile")
+        configfile:
+            os.path.join(workflow.basedir,"subworkflow/rename_fastqs/config.yaml")
+
+def cellranger_count_input(wildcards):
+    if RENAME.lower() == "y":
+        return(rename_files(f"renamed_{wildcards.samples}.done"))
+    elif RENAME.lower() == "n":
+        return([])
 
 
 rule cellranger_count:
-    # input:
+    input:
+        cellranger_count_input
     #     directory(os.path.join(DATA_DIR, "{samples_short}"))
     output:
         # expand("{{samples}}/outs/{counts_out}",counts_out = cellranger_count_outfiles),
@@ -71,7 +94,7 @@ rule cellranger_count:
         extra = CR_COUNT_EXTRA,
         transcriptome = PREFIX + "_genome",
         # fastqs = lambda wildcards: os.path.join(DATA_DIR, test_dict[wildcards.samples]),
-        fastqs = os.path.join(DATA_DIR, "{samples}"),
+        fastqs = DATA_DIR,
         samples = lambda wildcards: ",".join(test_dict[wildcards.samples]),
     shell:
         """
