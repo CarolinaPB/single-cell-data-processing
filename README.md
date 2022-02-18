@@ -9,11 +9,6 @@ This pipeline includes the first steps in the analysis of Single-cell data. It s
 It uses a reference genome and an annotation file (GTF) to build the reference genome index. Cellranger count [performs alignment, filtering, barcode counting, and UMI counting. It uses the Chromium cellular barcodes to generate feature-barcode matrices, determine clusters, and perform gene expression analysis](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger). The annotation file was modified to include both gene symbol (if available) and Ensembl ID as gene reference.
 
 #### Tools used:
-- [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) - fastq quality control
-- [multiqc](https://multiqc.info/) - merge the results of fastqc from all the samples into one report
-- [Rcorrector](https://github.com/mourisl/Rcorrector) - correct fastq reads
-- [Cutadapt](https://cutadapt.readthedocs.io/en/stable/) - trim poly A tail and discard reads smaller than X bases 
-- perl - edit GTF to include both gene symbol (if available) and Ensembl ID as gene reference
 - Cellranger:
     - [mkgtf](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf) - filter GTF. [default: off]
     - [mkref](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkref) - create reference
@@ -82,3 +77,25 @@ CR_COUNT_extra: ""
 
 ## RESULTS
 The most important files are and directories are:  
+
+
+
+# TODO
+First run until QC_and_remove_doublets. Look at the histogram of simulated doublets. The plot should have a bimodal distribution. The threshold should be in the dip between the two modes. The first run of the pipeline with use a automatically detected threshold. After the first run you should look at the histogram and see if the treshold is in the dip between the modes. If not, go to the config.yaml file, and add a list with your sample names (you can look at the name of the samples in the QC directory - name of directories.)
+the list should be in this format:
+Add all the samples, even if you want to keep the automatic thresholds. If you want to use the automatic thresholds don't add anything after the colon (":")
+```
+SCRUB_THRESHOLD: 
+  <sample name>: <threshold value>
+  <sample name>: <threshold value>
+  <sample name>: 
+```
+
+After changing the thresholds, you'll need to rerun this step again. Before you do this, you need to copy the previous results (QC directory) to another directory, or you need to delete those results
+
+Once that's done you can rerun the QC_and_remove_doublets step
+
+The QC_and_remove_doublets step creates several files:
+.h5ad file with filtered results
+jupyter notebook with the analysis steps and plots. This is is an interactive notebook. it can be opened and run, changed, etc. Use it to explore your data
+one directory per sample containing the plots created during this step (also present in the jupyter notebook)
