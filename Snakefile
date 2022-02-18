@@ -1,6 +1,7 @@
 configfile: "config.yaml"
 
 from snakemake.shell import shell
+from snakemake.utils import makedirs
 # from snakemake_wrapper_utils.java import get_java_opts
 from pathlib import Path
 pipeline = "single-cell-data-processing" # replace with your pipeline's name
@@ -11,23 +12,31 @@ include: "rules/create_file_log.smk"
 if "OUTDIR" in config:
     workdir: config["OUTDIR"]
 
+makedirs("logs_slurm")
+
 DATA_DIR = config["DATA"]
 PREFIX = config["PREFIX"]
 CR_COUNT_EXTRA = config["CR_COUNT_extra"]
 RENAME = config["RENAME"]
 
+MITO_PERCENTAGE = config["MITO_PERCENTAGE"] # keep cells with less than X% mitochondrial read fraction
+NUMBER_GENES_PER_CELL = config["NUMBER_GENES_PER_CELL"] # keep cells with more than X genes
+NUMBER_UMI_PER_CELL = config["NUMBER_UMI_PER_CELL"] # keep cells with more than X UMIs
+ENSEMBLE_BIOMART_SPECIES = config["ENSEMBLE_BIOMART_SPECIES"] # ensembl biomart species used to get the mitochondrial genes for that species
+SCRUB_THRESHOLD = config['SCRUB_THRESHOLD']
 
-localrules:  create_file_log, remove_ambient_RNA, combine_cellrange_counter_metrics, rename_files
 
-# SAMPLES_SHORT,SAMPLES, REST, = glob_wildcards(os.path.join(DATA_DIR, "{sample_short}/{sample}_S{rest}_R1_001.fastq.gz"))
+
+
+
+localrules:  create_file_log, remove_ambient_RNA, combine_cellrange_counter_metrics
+
 
 if RENAME.lower() =="n":
     TEST, REST, = glob_wildcards(os.path.join(DATA_DIR, "{test}_S{rest}_R1_001.fastq.gz"))
 elif RENAME.lower() == "y":
     TEST, = glob_wildcards(os.path.join(DATA_DIR, "{test}_R1.fastq.gz"))
 
-
-print(TEST)
 
 cellranger_count_outfiles = ["web_summary.html",
                             "metrics_summary.csv", 
@@ -51,28 +60,34 @@ for el in TEST:
             test_dict[op[0]] = [op[1]]
     else:
         test_dict[el] = [el]
-print(test_dict)
+
 
 rule all:
     input:
         files_log,
+        expand('ambient_RNA_correction/Ambient_RNA_correction_{samples}.html', samples = test_dict.keys()),
+        'cellranger_count_metrics_allsamples.tsv',
+        expand("QC/{samples}_QC_doublets.h5ad", samples = test_dict.keys())
+
+        # expand("SoupX/{samples}/features.tsv", samples = test_dict.keys()), # remove
+        # expand("remove_ambient_RNA_{samples}.done", samples = test_dict.keys()),
         # expand("{samples}/outs/{counts_out}",counts_out = cellranger_count_outfiles, samples = test_dict.keys()),
         # expand("cellranger_count_{samples}.done", samples = test_dict.keys()),
-        expand('ambient_RNA_correction/Ambient_RNA_correction_{samples}.html', samples = test_dict.keys()),
-        'cellranger_count_metrics_allsamples.tsv'
-
-        # expand("remove_ambient_RNA_{samples}.done", samples = test_dict.keys()),
 
 
-# def cellranger_count_input():
+
+
+FASTQS_DIR = DATA_DIR
 if RENAME.lower() == "y":
     subworkflow rename_files:
-        # workdir:
-        #     os.path.join(workflow.basedir,"subworkflow/rename_fastqs")
+        workdir:
+            config["OUTDIR"]
         snakefile:
             os.path.join(workflow.basedir,"subworkflow/rename_fastqs/Snakefile")
         configfile:
-            os.path.join(workflow.basedir,"subworkflow/rename_fastqs/config.yaml")
+            os.path.join(workflow.basedir,"config.yaml")
+
+    FASTQS_DIR = os.path.join(config["OUTDIR"], "renamed")
 
 def cellranger_count_input(wildcards):
     if RENAME.lower() == "y":
@@ -92,9 +107,9 @@ rule cellranger_count:
         'Rule {rule} processing'
     params:
         extra = CR_COUNT_EXTRA,
-        transcriptome = PREFIX + "_genome",
+        transcriptome = os.path.join(workflow.basedir, PREFIX + "_genome"),
         # fastqs = lambda wildcards: os.path.join(DATA_DIR, test_dict[wildcards.samples]),
-        fastqs = DATA_DIR,
+        fastqs = FASTQS_DIR,
         samples = lambda wildcards: ",".join(test_dict[wildcards.samples]),
     shell:
         """
@@ -113,7 +128,8 @@ rule remove_ambient_RNA:
         "cellranger_count_{samples}.done"
     output:
         # "remove_ambient_RNA_{samples}.done"
-        'ambient_RNA_correction/Ambient_RNA_correction_{samples}.html'
+        'ambient_RNA_correction/Ambient_RNA_correction_{samples}.html',
+        # expand("SoupX/{{samples}}/{soupxfile}", soupxfile = ["matrix.mtx.gz", "features.tsv.gz", "barcodes.tsv.gz"]), 
     message:
         'Rule {rule} processing'
     params:
@@ -138,94 +154,29 @@ rule combine_cellrange_counter_metrics:
         'scripts/combine_cellrange_counter_metrics.R'
 
 
+def set_scrub_treshold(wildcards):
+    if not SCRUB_THRESHOLD:
+        return("")
+    else:
+        return(SCRUB_THRESHOLD[wildcards.samples])
 
 
-
-
-
-
-
-
-
-
-# number_of_samples = len(sample_stem)
-# rule all:
-#     input:
-#         # "read_quality_assessment/multiqc_report.html",
-#         # "read_quality_assessment/trimmed/multiqc_report.html",
-#         files_log,
-#         # 'cellranger_count_metrics_allsamples.tsv',
-#         expand("{sample}/outs/{counts_out}",counts_out = cellranger_count_outfiles, sample=sample),
-
-#         # expand('SoupX/Ambient_RNA_correction_{sample_dir}.html', sample_dir = samples_dir)
-
-
-# output explanation: https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/gex-outputs
-# rule cellranger_count:
-#     input:
-#         # fastq = os.path.join(DATA_DIR, "{sample}_R1_001.fastq.gz"),
-#         ref_dir = PREFIX + "_genome" 
-#     output:
-#         expand("{{sample_dir}}/outs/{counts_out}",counts_out = cellranger_count_outfiles),
-#         # touch("count_{sample_stem}_{sample_long}.done")
-#     message:
-#         'Rule {rule} processing'
-#     params:
-#         # transcriptome = rules.cellranger_mkref.output.outdir,
-#         transcriptome = PREFIX + "_genome",
-#         extra = CR_COUNT_EXTRA,
-#         fastqs = os.path.join(DATA_DIR, "{sample}"),
-#         sample = "{sample}" # prefix fastq
-#     # wildcard_constraints:
-#     #     sample = "[^/]+"
-#     shell:
-#         """
-# /lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2/cellranger count \
-# {params.extra} \
-# --id={params.sample} \
-# --transcriptome={params.transcriptome} \
-# --fastqs={params.fastqs} \
-# --sample={params.sample}
-#         """
-
-
-# rule remove_ambient_RNA:
-#     input:
-#         "{sample, [^/]+}/outs/"
-#     output:
-#         'SoupX/Ambient_RNA_correction_{sample_dir}.html'
-#     message:
-#         'Rule {rule} processing'
-#     params:
-#         wd = os.getcwd()
-#     script:
-#         'scripts/remove_ambient_RNA.Rmd'
-
-# rule fastqc:
-#     input:
-#         expand(os.path.join(DATA_DIR, "{sample_stem}/{sample_long}.fastq.gz"), sample_stem=sample_stem, sample_long = sample_long),
-#     output:
-#         expand(os.path.join("1_fastqc_results", "{sample_stem}/{sample_long}_fastqc.{ext}"), sample_stem=sample_stem, sample_long = sample_long, ext = ["zip", "html"]),
-#     message:
-#         'Rule {rule} processing'
-#     params:
-#         outdir = "1_fastqc_results",
-#     group:
-#         'qc'
-#     shell:
-#         'fastqc --outdir {params.outdir} --threads 16 {input}'
-
-# rule multiqc:
-#     input:
-#         expand(os.path.join("1_fastqc_results", "{sample_stem}/{sample_long}_fastqc.{ext}"), sample_stem=sample_stem, sample_long = sample_long, ext = ["zip", "html"]),
-#     output:
-#         "1_fastqc_results/multiqc_report.html" # change to "1_fastq_results/not_trimmed/multiqc_report.html"
-#     message:
-#         'Rule {rule} processing'
-#     params:
-#         # outdir = "read_quality_assessment,
-#         fastqc_results = "fastqc_results" # change to "fastq_results/not_trimmed"
-#     group:
-#         'qc'
-#     shell:
-#         'multiqc {params.fastqc_results} --filename {output}'
+rule QC_and_remove_doublets:
+    input:
+        rules.remove_ambient_RNA.output
+    output:
+        "QC/{samples}_QC_doublets.h5ad"
+    log:
+        notebook = "QC/processed_notebook_{samples}.ipynb"
+    params:
+        mito_percentage = 10,
+        number_genes_per_cell = 500,
+        number_UMI_per_cell = 1000,
+        ensemble_biomart_species = "sscrofa",
+        sample = "{samples}",
+        # scrub_threshold = lambda wildcards: SCRUB_THRESHOLD[wildcards.samples]
+        scrub_threshold = lambda wildcards: set_scrub_treshold(wildcards)
+    message:
+        'Rule {rule} processing'
+    notebook:
+        'QC_Scanpy.py.ipynb'
