@@ -46,7 +46,7 @@ After filtering:
   - [mkref](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkref) - create reference
   - [count](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count) - create feature counts
 
-| ![DAG](https://github.com/CarolinaPB/nanopore-assembly/blob/master/workflow.png) |
+| ![DAG](https://github.com/CarolinaPB/single-cell-data-processing/blob/master/workflow.png) |
 |:--:|
 |*Pipeline workflow* |
 
@@ -54,56 +54,54 @@ After filtering:
 
 ```yaml
 DATA: /path/to/directory/with/fastqs
-FASTA: /path/to/fasta.fa
 GTF: /path/to/gtf.gtf
-
-# Filter GTF
-FILTER_GTF: <y/n> 
-ATTRIBUTES:
-  - "--attribute=gene_biotype:protein_coding"
-  - "--attribute=<attribute>"
-
-# mkref options
 PREFIX: <prefix>
-REF_VERSION: 
-    - "--ref-version=<version>"
-CR_MKREF_EXTRA: ""
 
-# rcorrector options
-KMER: <kmer length>
-RCORRECTOR_EXTRA: "" 
-RCORRECTOR: <se/pe>
-# if se:
-RCORRECTOR_R: <R1/R2>
+RENAME: <y/n>
 
-# polyA trimming options
-TRIM_EXTRA: 
-  - "<option>"
-  - "<option>"
-
-# Cell ranger counter
 CR_COUNT_extra: ""
+
+# QC parameters
+MITO_PERCENTAGE: 10
+NUMBER_GENES_PER_CELL: 500 
+NUMBER_UMI_PER_CELL: 1000
+ENSEMBLE_BIOMART_SPECIES: "<species>"
+# Doublet removal parameters
+# threshold doublet score (should be at the minimum between two modes of the simulated doublet histogram)
+# Add a line for every sample, even if you don't add a value.
+SCRUB_THRESHOLD: 
+  <sample 1>: <value>
+  <sample 2>: <empty>
 ```
 
-- DATA - path to directory containing fastq files (fastq files should have *R1_fastq.gz and*R2.fastq ending)
-- FASTA - path to reference genome fasta file
-- GTF - path to GTF file
-- Options for cellranger mkref
-  - PREFIX - prefix to name output folder. The name will be <prefix>_genome
-  - REF_VERSION - version of reference genome
-  - CR_MKREF_EXTRA - any other parameters for mkref. [Default: ""]
-- Options for filtering
-  - FILTER_GTF - `Y` for filtering the GTF for the attributes in ATTRIBUTES. `N` for no filtering. [Default: N]
-  - ATTRIBUTES - filters to be applied. Check options [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf) [Default: ""]
-- Options for fastq correcting
-  - KMER - kmer length [Default: 25]
-  - RCORRECTOR_EXTRA - any other Rcorrect parameters. [Default: ""]
-  - RCORRECTOR - `se` if only want to correct R1 or R2 reads. `pe` if you want to correct both R1 and R2 reads. [Default: se]
-  - RCORRECTOR_R: `R1` or `R2` for correcting R1 or R2 reads, respectively. [Default: R2]
-- Options for trimming:
-  - TRIM_EXTRA - parameters to use. Check options [here](https://cutadapt.readthedocs.io/en/stable/guide.html). [Default: '-A "A{10}"', "--minimum-length :25"]
+- DATA - path to directory containing fastq files. Preferrably, the files should be named in the format accepted by Cellranger Count `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. If they are, set `RENAME: n`. If not, they should be in the format `<sample>_R1.fastq.gz`. In this case, you should set `RENAME: y` so that the pipeline will rename the files according to the necessary format for Cellranger Count.
+- PREFIX - The name of your organism. The reference package used for cellranger count will be in the `<prefix>_genome` directory
+- RENAME - `y` if your input fastqs are not named in this format `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. `n` if they are.
 - Options for Cellrange counter:
-  - CR_COUNT_extra - any other cellranger count parameters. [Default: ""]
+  - CR_COUNT_extra - any other options for cellranger count. [Find other options here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count). [Default: ""]
+- QC parameters
+  - MITO_PERCENTAGE - Keep cells with less than X% mitochondrial read fraction. [Default: 10]
+  - NUMBER_GENES_PER_CELL - keep cells with more than X genes. [Default: 500]
+  - NUMBER_UMI_PER_CELL - keep cells with more than X UMIs. [Default: 1000]
+  - ENSEMBLE_BIOMART_SPECIES -  ensembl biomart species used to get the
+- Doublet removal score
+  - SCRUB_THRESHOLD - threshold doublet score. It should be at the minimum between two modes of the simulated doublet histogram.   
+  In the first run it should be run as `SCRUB_TRESHOLD: `.   
+  After that is done, for each sample you should then look at the `4_Doublets/<sample>/histogram_<sample>_doublets.pdf` plot and see if the vertical line on the "simulated doublets" plot is at the minimum between the two modes. If it's not, you should manually set it in the config file as:
+
+```
+SCRUB_THRESHOLD: 
+  <sample 1>: <value>
+  <sample 2>: <empty>
+```
+There should be a line for each sample, even if you don't need to set the threshold for that sample. If you need to change the treshold, set `<sample>: <value>`, if not, set `<sample>: `.
+
+
+
+
+### Other set up
+If you're working with human or mouse data, download the reference from here:
+<https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest> and place it in a folder in the pipeline directory called `<prefix>_genome`
 
 ## RESULTS
 
@@ -130,3 +128,7 @@ The QC_and_remove_doublets step creates several files:
 .h5ad file with filtered results
 jupyter notebook with the analysis steps and plots. This is is an interactive notebook. it can be opened and run, changed, etc. Use it to explore your data
 one directory per sample containing the plots created during this step (also present in the jupyter notebook)
+
+# TODO
+
+ADD MKREF OPTION
