@@ -50,6 +50,7 @@ cellranger_count_outdirs = ["filtered_feature_bc_matrix",
                             "raw_feature_bc_matrix",
                             "analysis"]
 # Create dictionary with sample names 
+# If the fastq files are in a <sample>/<sample>.fastq 
 samples_dict = {}
 for el in SAMPLES:
     if "/" in el:
@@ -184,10 +185,10 @@ rule QC:
     log:
         notebook = "3_QC/processed_notebook_{samples}.ipynb"
     params:
-        mito_percentage = 10,
-        number_genes_per_cell = 500,
-        number_UMI_per_cell = 1000,
-        ensemble_biomart_species = "sscrofa",
+        mito_percentage = MITO_PERCENTAGE,
+        number_genes_per_cell = NUMBER_GENES_PER_CELL,
+        number_UMI_per_cell = NUMBER_UMI_PER_CELL,
+        ensemble_biomart_species = ENSEMBLE_BIOMART_SPECIES,
         sample = "{samples}",
         # scrub_threshold = lambda wildcards: SCRUB_THRESHOLD[wildcards.samples]
     message:
