@@ -81,18 +81,40 @@ SCRUB_THRESHOLD:
   <sample 2>: <empty>
 ```
 
-- DATA - path to directory containing fastq files. Preferrably, the files should be named in the format accepted by Cellranger Count `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. If they are, set `RENAME: n`. If not, they should be in the format `<sample>_R1.fastq.gz`. In this case, you should set `RENAME: y` so that the pipeline will rename the files according to the necessary format for Cellranger Count.
-- PREFIX - The name of your organism. The reference package used for cellranger count will be in the `<prefix>_genome` directory
-- RENAME - `y` if your input fastqs are not named in this format `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. `n` if they are.
+- **DATA** - path to directory containing fastq files. Preferrably, the files should be named in the format accepted by Cellranger Count `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. If they are, set `RENAME: n`. If not, they should be in the format `<sample>_R1.fastq.gz`. In this case, you should set `RENAME: y` so that the pipeline will rename the files according to the necessary format for Cellranger Count.
+The path can be to a directory that contains a subdirectory per sample. For example:
+
+```text
+DATA
+├── SAMPLE_1
+│   ├──  sample_1_R1.fastq.gz
+│   └──  sample_1_R2.fastq.gz
+└── SAMPLE_2
+    ├──  sample_2_R1.fastq.gz
+    └──  sample_2_R2.fastq.gz
+```
+
+Or to a directory with fastqs for all samples:
+
+```text
+DATA
+├── sample_1_R1.fastq.gz
+├── sample_1_R2.fastq.gz
+├── sample_2_R1.fastq.gz
+└── sample_2_R2.fastq.gz
+```
+
+- **PREFIX** - The name of your organism. The reference package used for cellranger count will be in the `<prefix>_genome` directory
+- **RENAME** - `y` if your input fastqs are not named in this format `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. `n` if they are.
 - Options for Cellrange counter:
-  - CR_COUNT_extra - any other options for cellranger count. [Find other options here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count). [Default: ""]
+  - **CR_COUNT_extra** - any other options for cellranger count. [Find other options here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count). [Default: ""]
 - QC parameters
-  - MITO_PERCENTAGE - Keep cells with less than X% mitochondrial read fraction. [Default: 10]
-  - NUMBER_GENES_PER_CELL - keep cells with more than X genes. [Default: 500]
-  - NUMBER_UMI_PER_CELL - keep cells with more than X UMIs. [Default: 1000]
-  - ENSEMBLE_BIOMART_SPECIES -  ensembl biomart species used to get the
+  - **MITO_PERCENTAGE** - Keep cells with less than X% mitochondrial read fraction. [Default: 10]
+  - **NUMBER_GENES_PER_CELL** - keep cells with more than X genes. [Default: 500]
+  - **NUMBER_UMI_PER_CELL** - keep cells with more than X UMIs. [Default: 1000]
+  - **ENSEMBLE_BIOMART_SPECIES** -  ensembl biomart species used to get the
 - Doublet removal score
-  - SCRUB_THRESHOLD - threshold doublet score. It should be at the minimum between two modes of the simulated doublet histogram.
+  - **SCRUB_THRESHOLD** - threshold doublet score. It should be at the minimum between two modes of the simulated doublet histogram.
   In the first run it should be run as `SCRUB_TRESHOLD:`.
   After that is done, for each sample you should then look at the `4_Doublets/<sample>/histogram_<sample>_doublets.pdf` plot and see if the vertical line on the "simulated doublets" plot is at the minimum between the two modes. If it's not, you should manually set it in the config file as:
 
@@ -139,3 +161,7 @@ one directory per sample containing the plots created during this step (also pre
 # TODO
 
 ADD MKREF OPTION
+
+Before QC step, download Cloup files and use Loupe to play around with the data and find suitable filtering parameters
+
+for each sample, play wiht parameters in notebook to find optimal filtering parameters
