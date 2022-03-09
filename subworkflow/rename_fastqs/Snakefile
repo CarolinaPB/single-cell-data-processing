@@ -24,12 +24,12 @@ rule rename_files:
         R1 = os.path.join(DATA_DIR, "{samples}_R1.fastq.gz"),
         R2 = os.path.join(DATA_DIR, "{samples}_R2.fastq.gz")
     output:
-        touch("renamed_{samples}.done") # change dir to "5_renamed_dir"
+        touch("renamed_{samples}.done")
     message:
         'Rule {rule} processing'
     params: 
         number = lambda wildcards: numbered_samples["{}".format(wildcards.samples)],
-        outdir = "renamed" # change dir to "5_renamed_dir"
+        outdir = "1_renamed"
     shell:
         """
         mkdir -p "renamed"
