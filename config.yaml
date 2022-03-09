@@ -1,31 +1,38 @@
-DATA: /lustre/nobackup/WUR/ABGC/moiti001/SINGLE_CELL/PRACTICE/DATA
-FASTA: /lustre/nobackup/WUR/ABGC/moiti001/SINGLE_CELL/PRACTICE/DATA/Sus_scrofa.Sscrofa11.1.dna.toplevel.fa
-GTF: /lustre/nobackup/WUR/ABGC/moiti001/SINGLE_CELL/PRACTICE/DATA/Sus_scrofa.Sscrofa11.1.105.gtf
+DATA: /path/to/data/dir
+FASTA: /path/to/fasta
+GTF: /path/to/gtf # if creating own reference
+OUTDIR: /path/to/outdir
 
-# Filter GTF
-FILTER_GTF: n
-# see here for available biotypes https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf
-ATTRIBUTES:
-  - "--attribute=gene_biotype:protein_coding"
 
 # mkref options
-PREFIX: pig
+MKREF: <y/n>
+PREFIX: <species>
 REF_VERSION: 
-  - "--ref-version=11.1.105"
+  - "--ref-version=<version>"
 CR_MKREF_EXTRA: ""
 
-# rcorrector options
-KMER: 25 #kmer_length
-RCORRECTOR_EXTRA: "" # check options here https://github.com/mourisl/Rcorrector
-RCORRECTOR: se # or pe
-# if se:
-RCORRECTOR_R: R2 # or R1
+# Filter GTF
+FILTER_GTF: y
+# # see here for available biotypes https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf
+ATTRIBUTES:
+  - "--attribute=<biotype>"
 
-# polyA trimming
-# check options here https://cutadapt.readthedocs.io/en/stable/guide.html
-TRIM_EXTRA: 
-  - '-A "A{10}"'
-  - "--minimum-length :25" # extra options for cutadapt
+# rename fastq files
+RENAME: <y/n>
 
 # Cell ranger count options 
-CR_COUNT_extra: "" #https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count
+# https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count
+CR_COUNT_extra: ""
+
+# QC parameters
+MITO_PERCENTAGE: 10 # keep cells with less than X% mitochondrial read fraction
+NUMBER_GENES_PER_CELL: 500 # keep cells with more than X genes
+NUMBER_UMI_PER_CELL: 1000 # keep cells with more than X UMIs
+ENSEMBLE_BIOMART_SPECIES: "<species>" # ensembl biomart species used to get the mitochondrial genes for that species
+
+# threshold doublet score (should be at the minimum between two modes of the simulated doublet histogram)
+SCRUB_THRESHOLD: 
+  <sample1>: <value>
+  <sample2>: <empty>
+
+
