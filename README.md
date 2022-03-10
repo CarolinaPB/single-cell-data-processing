@@ -13,7 +13,7 @@ If the fastq files are not named in the format accepted by Cellranger count: `[S
 
 The metrics from Cellranger count for all samples are combined into one file `cellranger_count_metrics_allsamples.tsv`. This will have information such as "estimated number of cells", and "mean reads per cell".
 
-After the Cellranger count step, it's important to remove the ambient RNA, which is RNA that has been released from degraded or dying cells and is now in the cell suspension. The R package [SoupX](https://github.com/constantAmateur/SoupX) is used to correct for ambient RNA. In addition to the output files with the corrected data, one html document is created per sample processed (`ambient_RNA_correction/Ambient_RNA_correction_<sample>.html`). This html file shows the code used to perform the ambient RNA correction, as well as a few plots that illustrate this process - for the 5 most affected genes and for 5 random genes:
+After the Cellranger count step, it's important to remove the ambient RNA, which is RNA that has been released from degraded or dying cells and is now in the cell suspension. The R package [SoupX](https://github.com/constantAmateur/SoupX) is used to correct for ambient RNA. In addition to the output files with the corrected data, one html document is created per sample processed (`2_ambient_RNA_correction/Ambient_RNA_correction_<sample>.html`). This html file shows the code used to perform the ambient RNA correction, as well as a few plots that illustrate this process - for the 5 most affected genes and for 5 random genes:
 
 - Plot 1: in which cells the gene is expressed
 - Plot 2: ratio of observed to expected counts
@@ -21,7 +21,7 @@ After the Cellranger count step, it's important to remove the ambient RNA, which
 
 Once the data has been corrected for ambient RNA, it's time for quality control filtering. This is a step that depends on the cell type, library preparation method used, etc, so you should always check if the default parameters make sense, use your own, or even run several times with different ones.
 
-QC is run for every sample separately. First [Scanpy](https://scanpy.readthedocs.io/en/stable/) calculates some general QC metrics for genes and cells. It will also calculate the proportion of counts for mitochondrial genes. Several plots will be created to help assess the quality of the data:
+QC is run for every sample separately. First [Scanpy](https://scanpy.readthedocs.io/en/stable/) calculates some general QC metrics for genes and cells. It will also calculate the proportion of counts for mitochondrial genes. Several plots will be created to help assess the quality of the data:  
 Before filtering:
 
 - Violin plots showing:
@@ -30,17 +30,19 @@ Before filtering:
   - pct_counts_mt: proportion of mitochondrial counts for a cell
 - Scatter plot showing :
   - total_counts vs pct_counts_mt
-  - total counts vs n_genes_by_counts
+  - total counts vs n_genes_by_counts  
+
 After filtering:
+
 - Percentage of counts per gene for the top 20 genes after filtering
 - Violin plots showing:
   - n_genes_by_counts: number of genes with positive counts in a cell
   - total_counts: total number of counts for a cell
   - pct_counts_mt: proportion of mitochondrial counts for a cell
 
-The final preprocessing step is doublet removal with [Scrublet](https://github.com/swolock/scrublet). This step may be run more than once to determine the ideal doublet score threshold. The histogram shown in  `4_Doublets/<sample>/histogram_<sample>_doublets.pdf` should show a biomodal distribution, and the threshold show in the "simulated doublets" plot should be at the minium between the two modes. The first run should be with parameter `SCRUB_TRESHOLD:`. Once the first run has finished, you should look at the histograms of all samples and see if you need to change the treshold. If you do, set it in the config file as explained further below and run the `remove_doublets` step again.
+The final preprocessing step is doublet removal with [Scrublet](https://github.com/swolock/scrublet). This step may be run more than once to determine the ideal doublet score threshold. The histogram shown in `4_Doublets/<sample>/histogram_<sample>_doublets.pdf` should show a biomodal distribution, and the threshold show in the "simulated doublets" plot should be at the minium between the two modes. The first run should be with parameter `SCRUB_TRESHOLD:`. Once the first run has finished, you should look at the histograms of all samples and see if you need to change the treshold. If you do, set it in the config file as explained further below and run the `remove_doublets` step again.
 
-For each sample there will be an `h5ad` object containing the preprocessed data for each sample - ambient RNA removed, QC filtered and doublets removed - in the `4_Doublets` directory.
+There will be an `h5ad` object containing the preprocessed data for each sample - ambient RNA removed, QC filtered and doublets removed - in the `4_Doublets` directory.
 
 #### Tools used
 
@@ -61,24 +63,42 @@ For each sample there will be an `h5ad` object containing the preprocessed data 
 ### Edit config.yaml with the paths to your files and set parameters
 
 ```yaml
-DATA: /path/to/directory/with/fastqs
-GTF: /path/to/gtf.gtf
-PREFIX: <prefix>
+DATA: /path/to/data/dir
+FASTA: /path/to/fasta
+GTF: /path/to/gtf # if creating own reference
+OUTDIR: /path/to/outdir
 
+
+# mkref options
+MKREF: <y/n>
+PREFIX: <species>
+REF_VERSION: 
+  - "--ref-version=<version>"
+CR_MKREF_EXTRA: ""
+
+# Filter GTF
+FILTER_GTF: y
+# # see here for available biotypes https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf
+ATTRIBUTES:
+  - "--attribute=<biotype>"
+
+# rename fastq files
 RENAME: <y/n>
 
+# Cell ranger count options 
+# https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count
 CR_COUNT_extra: ""
 
 # QC parameters
-MITO_PERCENTAGE: 10
-NUMBER_GENES_PER_CELL: 500 
-NUMBER_UMI_PER_CELL: 1000
-ENSEMBLE_BIOMART_SPECIES: "<species>"
+MITO_PERCENTAGE: 10 # keep cells with less than X% mitochondrial read fraction
+NUMBER_GENES_PER_CELL: 500 # keep cells with more than X genes
+NUMBER_UMI_PER_CELL: 1000 # keep cells with more than X UMIs
+ENSEMBLE_BIOMART_SPECIES: "<species>" # ensembl biomart species used to get the mitochondrial genes for that species
 
-# Scrublet treshold
+# threshold doublet score (should be at the minimum between two modes of the simulated doublet histogram)
 SCRUB_THRESHOLD: 
-  <sample 1>: <value>
-  <sample 2>: <empty>
+  <sample1>: <value>
+  <sample2>: <empty>
 ```
 
 - **DATA** - path to directory containing fastq files. Preferrably, the files should be named in the format accepted by Cellranger Count `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. If they are, set `RENAME: n`. If not, they should be in the format `<sample>_R1.fastq.gz`. In this case, you should set `RENAME: y` so that the pipeline will rename the files according to the necessary format for Cellranger Count.
@@ -105,8 +125,9 @@ DATA
 ```
 
 - **PREFIX** - The name of your organism. The reference package used for cellranger count will be in the `<prefix>_genome` directory
-- **RENAME** - `y` if your input fastqs are not named in this format `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. `n` if they are.
-- Options for Cellrange counter:
+- **MKREF** `y` if Cell Ranger doesn't provide a reference package for your species (currently, the species available are Human and Mouse). `n` if you're using an existing reference package. In this case, you should create a directory in the pipeline directory named `<prefix>_genome`, and download the reference from [here](https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest).
+- **RENAME** - `y` if your input fastqs are not named in this format `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. Use `n` if they are.
+- Options for Cellrange count:
   - **CR_COUNT_extra** - any other options for cellranger count. [Find other options here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count). [Default: ""]
 - QC parameters
   - **MITO_PERCENTAGE** - Keep cells with less than X% mitochondrial read fraction. [Default: 10]
@@ -115,7 +136,7 @@ DATA
   - **ENSEMBLE_BIOMART_SPECIES** -  ensembl biomart species used to get the
 - Doublet removal score
   - **SCRUB_THRESHOLD** - threshold doublet score. It should be at the minimum between two modes of the simulated doublet histogram.
-  In the first run it should be run as `SCRUB_TRESHOLD:`.
+  In the first run it should be run as `SCRUB_TRESHOLD:` (with no parameters).
   After that is done, for each sample you should then look at the `4_Doublets/<sample>/histogram_<sample>_doublets.pdf` plot and see if the vertical line on the "simulated doublets" plot is at the minimum between the two modes. If it's not, you should manually set it in the config file as:
 
 ```yaml
@@ -124,7 +145,7 @@ SCRUB_THRESHOLD:
   <sample 2>: <empty>
 ```
 
-There should be a line for each sample, even if you don't need to set the threshold for that sample. If you need to change the treshold, set `<sample>: <value>`, if not, set `<sample>:`.
+In `SCRUB_THRESHOLD` there should be a line for each sample, even if you don't need to set the threshold for that sample. If you need to change the treshold, set `<sample>: <value>`, if not, set `<sample>:` (without value).
 
 ### Other set up
 
@@ -133,21 +154,40 @@ If you're working with human or mouse data, download the reference from here:
 
 ### How to run
 
-1. Run normally with  
-`snakemake -np` to print the steps that will be taken
+1. Run normally to print the steps that will be taken
 
-2. Once you have the `remove_doublets` results for each sample, you should look at the histogram, either in the jupyter notebook `4_Doublets/processed_notebook_<sample>.ipynb` or in the saved plot `4_Doublets/<sample>/histogram_<sample>_doublets.pdf`. The vertical bar (threshold) in the "simulated doublets" plot should be at the lowest point between the two modes. If not, you'll need to set it in the config file. Only change the threshold for the samples that need it. For some, the automatically set threshold may be good. To do this, edit the config file. Add your sample name (the same as the directory names in `4_Doublets`) and the new threshold or, in case you don't need to add a threshold, add the sample name and nothing in front of it.
+    ```
+    snakemake -np
+    ```
+
+2. If all looks good, run the pipeline with
+
+      ```
+      snakemake --profile <name of hpc profile>
+      ```
+
+3. Once you have the `remove_doublets` results for each sample, you should look at the histogram, either in the jupyter notebook `4_Doublets/processed_notebook_<sample>.ipynb` or in the saved plot `4_Doublets/<sample>/histogram_<sample>_doublets.pdf`. The vertical bar (threshold) in the "simulated doublets" plot should be at the lowest point between the two modes. If not, you'll need to set it in the config file. Only change the threshold for the samples that need it. For some, the automatically set threshold may be good. To do this, edit the config file. Add your sample name (the same as the directory names in `4_Doublets`) and the new threshold or, in case you don't need to add a threshold, add the sample name and nothing in front of it.
 
     ```yaml
     SCRUB_THRESHOLD: 
       <sample 1>: <value>
-      <sample 2>: 
+      <sample 2>:
       <sample 3>: <value>
     ```
 
-3. After changing the thresholds, you'll need to run this step again. Before you do this, you need to copy the previous results (`4_Doublets`) to another directory, or you need to delete those results.
+    In this case, the scrublet step for `sample 1` and `sample 3` will run with the user defined threshold and `sample 2` will run with the automatically defined treshold.
 
-4. Once that's done you can rerun the `remove_doublets` step
+4. After changing the thresholds, you'll need to run the `remove_doublets` step again. Before you do this, you need to copy the previous results (`4_Doublets`) to another directory, or you need to delete those results. Example to move the results to another directory:
+
+    ```
+    mkdir -p 4_Doublets_first_run
+    mv -r 4_Doublets/* 4_Doublets_first_run
+    ```
+
+5. Once that's done you can rerun the `remove_doublets` step with
+```
+
+```
 
 ## RESULTS
 

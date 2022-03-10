@@ -23,29 +23,28 @@ config_path = args[args.index("--configfile") + 1]
 makedirs("logs_slurm")
 
 DATA_DIR = config["DATA"]
-PREFIX = config["PREFIX"]
-CR_COUNT_EXTRA = config["CR_COUNT_extra"]
-RENAME = config["RENAME"]
+MKREF = config["MKREF"].lower()
+if MKREF == "y":
+    REF_VERSION = config["REF_VERSION"]
+    CR_MKREF_EXTRA = config["CR_MKREF_EXTRA"]
+    PREFIX = config["PREFIX"]
+    FASTA = config["FASTA"]
+    GTF = config["GTF"]
+    ATTRIBUTES = config["ATTRIBUTES"]
+    FILTER_GTF = config["FILTER_GTF"].lower()
 
+RENAME = config["RENAME"].lower()
+
+CR_COUNT_EXTRA = config["CR_COUNT_extra"]
+
+# QC parameters
 MITO_PERCENTAGE = config["MITO_PERCENTAGE"] # keep cells with less than X% mitochondrial read fraction
 NUMBER_GENES_PER_CELL = config["NUMBER_GENES_PER_CELL"] # keep cells with more than X genes
 NUMBER_UMI_PER_CELL = config["NUMBER_UMI_PER_CELL"] # keep cells with more than X UMIs
 ENSEMBLE_BIOMART_SPECIES = config["ENSEMBLE_BIOMART_SPECIES"] # ensembl biomart species used to get the mitochondrial genes for that species
+# Doublet removal - threshold doublet score
 SCRUB_THRESHOLD = config['SCRUB_THRESHOLD']
 
-MKREF = config["MKREF"].lower()
-REF_VERSION = config["REF_VERSION"]
-CR_MKREF_EXTRA = config["CR_MKREF_EXTRA"]
-if "GTF" in config:
-    GTF = config["GTF"]
-FILTER_GTF = config["FILTER_GTF"]
-
-FASTA = config["FASTA"]
-
-if "ATTRIBUTES" in config:
-    ATTRIBUTES = config["ATTRIBUTES"]
-else:
-    ATTRIBUTES = []
 
 localrules:  create_file_log, remove_ambient_RNA, combine_cellranger_counter_metrics, get_mito_genes, edit_gtf, filter_GTF, QC, remove_doublets
 

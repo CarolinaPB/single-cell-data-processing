@@ -3,7 +3,7 @@ FASTA: /path/to/fasta
 GTF: /path/to/gtf # if creating own reference
 OUTDIR: /path/to/outdir
 
-
+###### If you need to build your own reference package
 # mkref options
 MKREF: <y/n>
 PREFIX: <species>
@@ -12,10 +12,11 @@ REF_VERSION:
 CR_MKREF_EXTRA: ""
 
 # Filter GTF
-FILTER_GTF: y
+FILTER_GTF: <y/n>
 # # see here for available biotypes https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf
 ATTRIBUTES:
   - "--attribute=<biotype>"
+######
 
 # rename fastq files
 RENAME: <y/n>
@@ -32,7 +33,5 @@ ENSEMBLE_BIOMART_SPECIES: "<species>" # ensembl biomart species used to get the 
 
 # threshold doublet score (should be at the minimum between two modes of the simulated doublet histogram)
 SCRUB_THRESHOLD: 
-  <sample1>: <value>
-  <sample2>: <empty>
 
 
