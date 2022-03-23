@@ -163,8 +163,32 @@ If you don't want the results to be written to a new directory, open config.yaml
 
     In `SCRUB_THRESHOLD` there should be a line for each sample, even if you don't need to set the threshold for that sample. If you need to change the treshold, set `<sample>: <value>`, if not, set `<sample>:` (without value).
 
-### Additional set up
+## Additional set up
 
+### Install Cellranger
+Follow the instructions [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/installation)
+
+1. First download the package from the [downloads page](https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest). For example:
+```sh
+wget -O cellranger-6.1.2.tar.gz "https://cf.10xgenomics.com/releases/cell-exp/cellranger-6.1.2.tar.gz?Expires=1648081234&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZi4xMHhnZW5vbWljcy5jb20vcmVsZWFzZXMvY2VsbC1leHAvY2VsbHJhbmdlci02LjEuMi50YXIuZ3oiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE2NDgwODEyMzR9fX1dfQ__&Signature=HqCwx6eBEj~Lyw7C7UvsMAHzUH9aiPSM5yFcyflZiL2JRIwqzY2VWz1COtDQHNoJ48Ve41LZ5Q3eGv1yaAEf88SGhtxRUb2wJhFvvixBoR550bQ2wK7qfL6buLL9~u7MPw4q0-c1adXaSCm6otd6Xn0x2FIpZimOGJMYI9QEvNStN1Hi6MH4ZUOHGFFRBAvxlRxHmYBk-Vr~6qdc7nFXJW0C8OBWTn2g~XSKZRD50B5G5StMis0lLmgXZbRS0htQu8LPuUp8ZxqxQv20m9-HV9jEDVYEUP1sNJzAHGhAtq1FajN572Lptq0cWES8fheMexht1l-wRbQA-yOKAp7Bzg__&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA"
+```
+
+Attention: the `cellranger-6.1.2.tar.gz` name is an example, when you use this pipeline there might be a more recent version available.
+
+2. Unpack Cellranger:
+```sh
+tar -xzvf cellranger-6.1.2.tar.gz
+```
+This will create a new directory, `cellranger-6.1.2`, that contains cellranger and its dependencies. 
+
+3. Place the path to the `cellranger-6.1.2` (or the version you installed) in the config.yaml file. It should look like this
+
+```yaml
+CELLRANGER_PATH: /lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2
+```
+> don't add the backslash ("\\") after the directory name
+
+### Reference package
 If you're working with human or mouse data, download the reference from here:
 <https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest> and place it in a folder in the pipeline directory called `<prefix>_genome`.  
 If you're working with another organism, download the fasta file and gtf file for your organism and place them in a directory called `<prefix>_genome` directory (should be in the pipeline main directory - where the Snakefile is). You can download these from [Ensembl](https://www.ensembl.org/index.html).
@@ -220,7 +244,7 @@ Plot 1: in which cells the gene is expressed
 Plot 2: ratio of observed to expected counts
 Plot 3: change in expression due to correction
 
-- SoupX: inside, the ambient RNA corrected data for each sample is its corresponding directory.
+- 2_ambient_RNA_correction_data: inside, the ambient RNA corrected data for each sample is its corresponding directory.
 
 - 3_QC: directory containing results from QC:
   - processed_notebook_<sample>.ipynp - Jupyter notebooks used to calculate QC for each sample. These are interactive and can be used to do further QC.
