@@ -1,9 +1,7 @@
 # configfile: "config.yaml"
 
 import sys
-from snakemake.shell import shell
 from snakemake.utils import makedirs
-# from snakemake_wrapper_utils.java import get_java_opts
 from pathlib import Path
 pipeline = "single-cell-data-processing" # replace with your pipeline's name
 
@@ -11,13 +9,18 @@ pipeline = "single-cell-data-processing" # replace with your pipeline's name
 include: "rules/create_file_log.smk"
 
 if "OUTDIR" in config:
+    OUTDIR = config["OUTDIR"]
     workdir: config["OUTDIR"]
+else:
+    OUTDIR = os.getcwd()
 
+args = sys.argv
 
 # Get name of config file (to use in the subworkflow)
-args = sys.argv
-print(args[args.index("--configfile") + 1])
-config_path = args[args.index("--configfile") + 1]
+try:
+    config_path = args[args.index("--configfiles") + 1] # for running on the cluster
+except:
+    config_path = args[args.index("--configfile") + 1] # for running locally
 
 
 makedirs("logs_slurm")
@@ -48,11 +51,10 @@ SCRUB_THRESHOLD = config['SCRUB_THRESHOLD']
 
 localrules:  create_file_log, remove_ambient_RNA, combine_cellranger_counter_metrics, get_mito_genes, edit_gtf, filter_GTF, QC, remove_doublets
 
-if RENAME.lower() =="n":
+if RENAME =="n":
     SAMPLES, REST, = glob_wildcards(os.path.join(DATA_DIR, "{samp}_S{rest}_R1_001.fastq.gz"))
-elif RENAME.lower() == "y":
+elif RENAME == "y":
     SAMPLES, = glob_wildcards(os.path.join(DATA_DIR, "{samp}_R1.fastq.gz"))
-
 
 cellranger_count_outfiles = ["web_summary.html",
                             "metrics_summary.csv", 
@@ -70,17 +72,13 @@ cellranger_count_outdirs = ["filtered_feature_bc_matrix",
 # If strings in SAMPLES are in a <sample>/<sample>.fastq format, the name of the directory ("sample") will be used as the sample name
 samples_dict = {}
 for el in SAMPLES:
-    print(el)
     if "/" in el: 
     # if the string corresponds to directory/file.fastq.gz, split the string at the separator "/"
         op = el.split("/")
         # if the sample name op[0], the first element after the split, is already in the dictionary, add the 
         if op[0] in samples_dict:
-            print(op[0])
-            print(op[1])
             samples_dict[op[0]].append(op[1])
         else:
-            print(op[0])
             samples_dict[op[0]] = [op[1]]
     else:
         samples_dict[el] = [el]
@@ -129,9 +127,9 @@ def input_cellranger_mkref():
     If the option to filter the GTF file was set to "y", it will return the filtered GTF. 
     If the option to filter the GTF file was set to "n", it will return the unfiltered GTF.
     """
-    if FILTER_GTF.lower() == "y":
+    if FILTER_GTF == "y":
         return(f"{Path(GTF).stem}.filtered.gtf")
-    elif FILTER_GTF.lower() == "n":
+    elif FILTER_GTF == "n":
         return(f"{Path(GTF).stem}.edited.gtf")
 
 
@@ -173,6 +171,8 @@ if RENAME.lower() == "y":
             os.path.join(workflow.basedir,"subworkflow/rename_fastqs/Snakefile")
         configfile:
             os.path.join(workflow.basedir, config_path) # use same config as used for the main snakemake file
+        workdir:
+            OUTDIR
 
     # Path to renamed fastq files
     if "OUTDIR" in config:
@@ -187,7 +187,7 @@ def get_cellranger_count_input_rename(wildcards):
     result of the renaming rule as input
     """
     if RENAME.lower() == "y":
-        return(rename_files(f"renamed_{wildcards.samples}.done"))
+        return(rename_files(os.path.join(os.path.abspath(OUTDIR),f"renamed_{wildcards.samples}.done")))
     elif RENAME.lower() == "n":
         return([])
 
@@ -217,9 +217,9 @@ rule cellranger_count:
         get_cellranger_count_input_rename,
         get_cellranger_count_input_mkref()
     output:
-        # expand("{{samples}}/outs/{counts_out}",counts_out = cellranger_count_outfiles),
-        # directory(expand("{{samples}}/outs/{counts_outdirs}",counts_outdirs = cellranger_count_outdirs)),
-        touch("steps_done/cellranger_count_{samples}.done")
+        expand("{{samples}}/outs/{counts_out}",counts_out = cellranger_count_outfiles),
+        directory(expand("{{samples}}/outs/{counts_outdirs}",counts_outdirs = cellranger_count_outdirs)),
+        # touch("steps_done/cellranger_count_{samples}.done")
     message:
         'Rule {rule} processing'
     params:
@@ -229,6 +229,7 @@ rule cellranger_count:
         samples = lambda wildcards: ",".join(samples_dict[wildcards.samples]),
     shell:
         """
+rm -r {wildcards.samples} 
 /lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2/cellranger count \
 {params.extra} \
 --id={wildcards.samples} \
@@ -245,8 +246,6 @@ rule remove_ambient_RNA:
     These files will be created: matrix.mtx.gz, features.tsv.gz, barcodes.tsv.gz
     """
     input:
-        # "{samples}/outs/"
-        # expand("{{samples}}/outs/{counts_out}",counts_out = cellranger_count_outfiles),
         rules.cellranger_count.output
     output:
         '2_ambient_RNA_correction/Ambient_RNA_correction_{samples}.html',
@@ -266,8 +265,8 @@ rule combine_cellranger_counter_metrics:
     Combines cellranger count metrics for all samples in a single table
     """
     input:
-        # expand("{samples}/outs/{counts_out}",samples = samples_dict.keys(),counts_out = cellranger_count_outfiles ),
-        expand("steps_done/cellranger_count_{samples}.done", samples = samples_dict.keys())
+        expand("{samples}/outs/{counts_out}",samples = samples_dict.keys(),counts_out = cellranger_count_outfiles),
+        # expand("steps_done/cellranger_count_{samples}.done", samples = samples_dict.keys())
     output:
         'cellranger_count_metrics_allsamples.tsv'
     message:
