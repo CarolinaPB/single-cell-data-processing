@@ -1,11 +1,11 @@
 DATA: /path/to/data/dir
-FASTA: /path/to/fasta
-GTF: /path/to/gtf # if creating own reference
 OUTDIR: /path/to/outdir
 
 ###### If you need to build your own reference package
 # mkref options
 MKREF: <y/n>
+FASTA: /path/to/fasta
+GTF: /path/to/gtf # if creating own reference
 PREFIX: <species>
 REF_VERSION: 
   - "--ref-version=<version>"
