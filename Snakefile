@@ -1,4 +1,4 @@
-# configfile: "config.yaml"
+configfile: "config.yaml"
 
 import sys
 from snakemake.utils import makedirs
@@ -26,6 +26,8 @@ except:
 makedirs("logs_slurm")
 
 DATA_DIR = config["DATA"]
+CELLRANGER_PATH = config["CELLRANGER_PATH"]
+
 MKREF = config["MKREF"].lower()
 if MKREF == "y":
     REF_VERSION = config["REF_VERSION"]
@@ -45,6 +47,7 @@ MITO_PERCENTAGE = config["MITO_PERCENTAGE"] # keep cells with less than X% mitoc
 NUMBER_GENES_PER_CELL = config["NUMBER_GENES_PER_CELL"] # keep cells with more than X genes
 NUMBER_UMI_PER_CELL = config["NUMBER_UMI_PER_CELL"] # keep cells with more than X UMIs
 ENSEMBLE_BIOMART_SPECIES = config["ENSEMBLE_BIOMART_SPECIES"] # ensembl biomart species used to get the mitochondrial genes for that species
+
 # Doublet removal - threshold doublet score
 SCRUB_THRESHOLD = config['SCRUB_THRESHOLD']
 
@@ -114,10 +117,11 @@ rule filter_GTF:
     message:
         'Rule {rule} processing'
     params:
-        attributes = ATTRIBUTES
+        attributes = ATTRIBUTES,
+        cr_path = CELLRANGER_PATH
     shell:
         """
-/lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2/cellranger mkgtf \
+{params.cr_path}/cellranger mkgtf \
 {input} {output} {params.attributes}
         """
 
@@ -144,10 +148,11 @@ rule cellranger_mkref: # short run time. around 10 min
         'Rule {rule} processing'
     params:
         ref_version = REF_VERSION,
-        extra = CR_MKREF_EXTRA
+        extra = CR_MKREF_EXTRA,
+        cr_path = CELLRANGER_PATH
     shell:
         """
-/lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2/cellranger mkref \
+{params.cr_path}/cellranger mkref \
 --genome={output.outdir} \
 --fasta={input.fasta} \
 --genes={input.gtf} \
@@ -227,10 +232,11 @@ rule cellranger_count:
         transcriptome = os.path.join(workflow.basedir, f"{PREFIX}_genome"),
         fastqs = FASTQS_DIR,
         samples = lambda wildcards: ",".join(samples_dict[wildcards.samples]),
+        cr_path = CELLRANGER_PATH
     shell:
         """
 rm -r {wildcards.samples} 
-/lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2/cellranger count \
+{params.cr_path}/cellranger count \
 {params.extra} \
 --id={wildcards.samples} \
 --transcriptome={params.transcriptome} \
@@ -258,7 +264,6 @@ rule remove_ambient_RNA:
         sample = "{samples}"
     script:
         'scripts/remove_ambient_RNA.Rmd'
-
 
 rule combine_cellranger_counter_metrics:
     """
