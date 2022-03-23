@@ -8,9 +8,9 @@ Click [here](https://github.com/CarolinaPB/snakemake-template/blob/master/Short%
 ## ABOUT
 
 This pipeline includes the first steps in the analysis of Single-cell data.  
-If you're working with an organism other than Human or Mouse, you'll need to [create your own reference package](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references) to be used by Cellranger Count. This step is included in the pipeline and can be used by setting `MKREF: y` in the config file. You'll also need to configure some more options (details below).
-If you're working with Human or Mouse, you can download the reference package from Cellranger (details below).
-Once you have the reference package, the pipeline starts by running [Cellranger count](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count). Cellranger count performs alignment, filtering, barcode counting, and UMI counting. It uses the Chromium cellular barcodes to generate feature-barcode matrices, determine clusters, and perform gene expression analysis.  
+The first step is getting the reference package for your species. This will be used for read alignment and gene expression quantification. If you're working with human or mouse, you can download the reference from the Cellranger website, if not, the pipeline can create the reference for you. (details below)
+
+Once you have the reference package, the pipeline starts by running [Cellranger count](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count). Cellranger count performs alignment, filtering, barcode counting, and UMI counting. It uses the Chromium cellular barcodes to generate feature-barcode matrices, determine clusters, and perform gene expression analysis.    
 If the fastq files are not named in the format accepted by Cellranger count: `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`, you can specify in the config file that these need to be renamed: option `RENAME: y` or you can rename them yourself to follow this naming convention.
 
 The metrics from Cellranger count for all samples are combined into one file `cellranger_count_metrics_allsamples.tsv`. This will have information such as "estimated number of cells", and "mean reads per cell".
@@ -53,7 +53,8 @@ This file can be used for further analysis.
   - [mkgtf](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf) - filter GTF. [default: off]
   - [mkref](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkref) - create reference
   - [count](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count) - create feature counts
-- R - combine Cellranger count sample metrics
+- R 
+  - combine Cellranger count sample metrics
   - [SoupX](https://github.com/constantAmateur/SoupX) - remove ambient RNA
 - Python
   - [Scanpy](https://scanpy.readthedocs.io/en/stable/index.html) - QC filtering
@@ -184,13 +185,12 @@ This will create a new directory, `cellranger-6.1.2`, that contains cellranger a
 3. Place the path to the `cellranger-6.1.2` (or the version you installed) in the config.yaml file. It should look like this
 
 ```yaml
-CELLRANGER_PATH: /lustre/nobackup/WUR/ABGC/moiti001/TOOLS/cellranger-6.1.2
+CELLRANGER_PATH: /path/to/cellranger-6.1.2
 ```
 > don't add the backslash ("\\") after the directory name
 
 ### Reference package
-If you're working with human or mouse data, download the reference from here:
-<https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest> and place it in a folder in the pipeline directory called `<prefix>_genome`.  
+If you're working with human or mouse data, download the reference from [here](https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest) and place it in a folder in the pipeline directory called `<prefix>_genome`.  
 If you're working with another organism, download the fasta file and gtf file for your organism and place them in a directory called `<prefix>_genome` directory (should be in the pipeline main directory - where the Snakefile is). You can download these from [Ensembl](https://www.ensembl.org/index.html).
 
 ### How to run
