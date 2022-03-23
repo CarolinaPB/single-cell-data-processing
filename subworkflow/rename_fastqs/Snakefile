@@ -1,11 +1,17 @@
 # configfile: "config.yaml"
 
 DATA_DIR = config["DATA"]
+# if "OUTDIR" in config:
+#     OUTDIR = config["OUTDIR"]
+#     workdir: config["OUTDIR"]
+# else:
+#     OUTDIR = os.getcwd()
 
 SAMPLES, = glob_wildcards(os.path.join(DATA_DIR, "{samples}_R1.fastq.gz"))
 localrules: rename_files
 rule all:
     input:
+        # expand(os.path.join(os.path.abspath(OUTDIR),"renamed_{samples}.done"), samples = SAMPLES)
         expand("renamed_{samples}.done", samples = SAMPLES)
 
 
@@ -24,15 +30,17 @@ rule rename_files:
         R1 = os.path.join(DATA_DIR, "{samples}_R1.fastq.gz"),
         R2 = os.path.join(DATA_DIR, "{samples}_R2.fastq.gz")
     output:
+        # touch(os.path.join(os.path.abspath(OUTDIR),"renamed_{samples}.done"))
         touch("renamed_{samples}.done")
     message:
         'Rule {rule} processing'
     params: 
         number = lambda wildcards: numbered_samples["{}".format(wildcards.samples)],
+        # outdir = os.path.join(os.path.abspath(OUTDIR),"1_renamed")
         outdir = "1_renamed"
     shell:
         """
-        mkdir -p "renamed"
+        mkdir -p {params.outdir}
         ln -s {input.R1} {params.outdir}/{wildcards.samples}_S{params.number}_L001_R1_001.fastq.gz
         ln -s {input.R2} {params.outdir}/{wildcards.samples}_S{params.number}_L001_R2_001.fastq.gz
         """
