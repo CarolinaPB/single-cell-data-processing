@@ -22,7 +22,7 @@ opts_knit$set(root.dir = snakemake@params$wd)
 ```
 ## Load packages
 ```{r, warning = FALSE, message=FALSE}
-packages <- c("dplyr", "knitr", "ggplot2", "Rtsne", "cowplot", "Seurat", "limma", "tidyr", "DropletUtils", "SoupX", "DoubletFinder")
+packages <- c("dplyr", "knitr", "ggplot2", "Rtsne", "cowplot", "Seurat", "limma", "tidyr", "DropletUtils", "SoupX")
 for (package in packages){
     library(package, character.only = TRUE)
 }
@@ -134,8 +134,8 @@ for (gene in sampled_genes){
 
 # Save the results
 ```{r}
-print(paste0("Saving results to SoupX/", snakemake@params$sample))
-dir.create(file.path(getwd(), "SoupX"), showWarnings = FALSE)
-path_to_save <- paste0("SoupX/", snakemake@params$sample)
+print(paste0("Saving results to 2_ambient_RNA_correction_data", snakemake@params$sample))
+dir.create(file.path(getwd(), "2_ambient_RNA_correction_data"), showWarnings = FALSE)
+path_to_save <- paste0("2_ambient_RNA_correction_data/", snakemake@params$sample)
 write10xCounts(path=path_to_save, out, version = "3")
 ```
