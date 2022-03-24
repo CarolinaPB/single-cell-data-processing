@@ -240,9 +240,9 @@ You will have results for each step of the pipeline.
 - 2_ambient_RNA_correction: directory containing results from ambient RNA correction
   - Ambient_RNA_correction_<sample>.html: shows the code used for the ambient RNA correction, as well as a few plots that illustrate this process - for the 5 most affected genes and for 5 random genes:
 
-Plot 1: in which cells the gene is expressed
-Plot 2: ratio of observed to expected counts
-Plot 3: change in expression due to correction
+    Plot 1: in which cells the gene is expressed  
+    Plot 2: ratio of observed to expected counts  
+    Plot 3: change in expression due to correction  
 
 - 2_ambient_RNA_correction_data: inside, the ambient RNA corrected data for each sample is its corresponding directory.
 
@@ -251,31 +251,31 @@ Plot 3: change in expression due to correction
   - <sample>.h5ad - Filtered data.
   - <sample> - Directory with QC plots
 
-##### Description of the QC plots
+      ##### Description of the QC plots
 
-Before filtering:
+      Before filtering:
 
-- Violin plots showing:
-  - n_genes_by_counts: number of genes with positive counts in a cell
-  - total_counts: total number of counts for a cell
-  - pct_counts_mt: proportion of mitochondrial counts for a cell
-- Scatter plot showing :
-  - total_counts vs pct_counts_mt
-  - total counts vs n_genes_by_counts  
+      - Violin plots showing:
+        - n_genes_by_counts: number of genes with positive counts in a cell
+        - total_counts: total number of counts for a cell
+        - pct_counts_mt: proportion of mitochondrial counts for a cell
+      - Scatter plot showing :
+        - total_counts vs pct_counts_mt
+        - total counts vs n_genes_by_counts  
 
-After filtering:
+      After filtering:
 
-- Percentage of counts per gene for the top 20 genes after filtering
-- Violin plots showing:
-  - n_genes_by_counts: number of genes with positive counts in a cell
-  - total_counts: total number of counts for a cell
-  - pct_counts_mt: proportion of mitochondrial counts for a cell
-These jupyter notebooks are interactive and can be used to do further QC control.
+      - Percentage of counts per gene for the top 20 genes after filtering
+      - Violin plots showing:
+        - n_genes_by_counts: number of genes with positive counts in a cell
+        - total_counts: total number of counts for a cell
+        - pct_counts_mt: proportion of mitochondrial counts for a cell
+      These jupyter notebooks are interactive and can be used to do further QC control.
 - 4_Doublets: directory containing results from doublet removal
   - processed_notebook_<sample>.ipynb - Jupyter notebooks used to do the doublet removal step for each sample. These are interactive and can be used to test different scrublet tresholds
   - <sample> - directory with saved plots
   - <sample>_doublets.h5ad - filtered data
-- <sample> - directory containing output from Cellranger count. See [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/overview) for more information
+- \<sample> - directory containing output from Cellranger count. See [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/overview) for more information
   - outs
     - web_summary.html - summary metrics and automated secondary analysis results. If an issue was detected during the pipeline run, an alert appears on this page.
     - metrics_summary.csv - metrics like "estimated number of cells"
