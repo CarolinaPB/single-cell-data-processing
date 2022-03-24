@@ -74,7 +74,6 @@ OUTDIR: /path/to/outdir
 MKREF: <y/n>
 FASTA: /path/to/fasta
 GTF: /path/to/gtf # if creating own reference
-PREFIX: <species>
 REF_VERSION: 
   - "--ref-version=<version>"
 CR_MKREF_EXTRA: ""
@@ -84,6 +83,8 @@ FILTER_GTF: y
 # # see here for available biotypes https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#mkgtf
 ATTRIBUTES:
   - "--attribute=<biotype>"
+
+PREFIX: <species>
 
 # rename fastq files
 RENAME: <y/n>
@@ -135,14 +136,13 @@ If you don't want the results to be written to a new directory, open config.yaml
 **You only need to set the following if `MKREF: y`:**
 
 - **FASTA** - path to fasta file
-- **PREFIX** - The name of your organism. The reference package used for cellranger count will be in the `<prefix>_genome` directory
 - **GTF**: path to gft file
 - **PREFIX**: name of your species. Used to name the directory containing the reference package
 - **REF_VERSION**: Reference version string to include with reference
 - **CR_MKREF_EXTRA**: any other options for cellranger mkref. [see here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references#singl)
 
 ----
-
+- **PREFIX** - The name of your organism. The reference package used for cellranger count will be in the `<prefix>_genome` directory
 - **RENAME** - `y` if your input fastqs are not named in this format `[Sample Name]_S1_L00[Lane Number]_[Read Type]_001.fastq.gz`. Use `n` if they are.
 - Options for Cellrange count:
   - **CR_COUNT_extra** - any other options for cellranger count. [Find other options here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/count#cr-count). [Default: ""]
