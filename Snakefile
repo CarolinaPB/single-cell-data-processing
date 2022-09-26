@@ -1,5 +1,3 @@
-configfile: "config.yaml"
-
 import sys
 from snakemake.utils import makedirs
 from pathlib import Path
