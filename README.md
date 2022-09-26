@@ -198,13 +198,13 @@ If you're working with another organism, download the fasta file and gtf file fo
 1. Dry run to check if everything was correctly set up and if the pipeline is ready to run
 
     ```sh
-    snakemake -np
+    snakemake -np --configfile <configname.yaml>
     ```
 
 2. If all looks good, run the pipeline with
 
       ```sh
-      snakemake --profile <name of hpc profile>
+      snakemake --profile <name of hpc profile> --configfile <configname.yaml>
       ```
 
 3. Once you have the `remove_doublets` results for each sample, you should look at the histogram, either in the jupyter notebook `4_Doublets/processed_notebook_<sample>.ipynb` or in the saved plot `4_Doublets/<sample>/histogram_<sample>_doublets.pdf`. The vertical bar (threshold) in the "simulated doublets" plot should be at the lowest point between the two modes. If not, you'll need to set it in the config file. Only change the threshold for the samples that need it. For some, the automatically set threshold may be good. To do this, edit the config file. Add your sample name (the same as the directory names in `4_Doublets`) and the new threshold or, in case you don't need to add a threshold, add the sample name and nothing in front of it.
@@ -228,8 +228,8 @@ If you're working with another organism, download the fasta file and gtf file fo
 5. Once that's done you can rerun the `remove_doublets` step with
 
     ```sh
-    snakemake -np --forcerun remove_doublets
-    snakemake --profile <profile name> --forcerun remove_doublets
+    snakemake -np --forcerun remove_doublets --configfile <configname.yaml>
+    snakemake --profile <profile name> --forcerun remove_doublets --configfile <configname.yaml>
     ```
 
 ## RESULTS
